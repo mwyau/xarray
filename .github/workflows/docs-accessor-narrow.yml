@@ -23,6 +23,16 @@ jobs:
           pixi lock --no-install
           pixi install -e doc
 
+      - name: Inspect normalized StringAccessor docstring
+        run: |
+          pixi run -e doc -- python - <<'PY'
+          from sphinx.util.docstrings import prepare_docstring
+          from xarray.core.accessor_str import StringAccessor
+
+          for number, line in enumerate(prepare_docstring(StringAccessor.__doc__), 1):
+              print(f"{number:03d}: {line!r}")
+          PY
+
       - name: Build only DataArray.str accessor docs
         run: |
           mkdir -p /tmp/xarray-accessor-doc
