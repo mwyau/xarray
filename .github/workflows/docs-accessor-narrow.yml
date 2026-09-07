@@ -38,18 +38,6 @@ jobs:
           path.write_text(text[:start] + replacement + text[end:])
           PY
 
-      - name: Inspect candidate docstring
-        run: |
-          pixi run -e doc -- python - <<'PY'
-          import inspect
-          from sphinx.util.docstrings import prepare_docstring
-          from xarray.core.accessor_str import StringAccessor
-
-          print(inspect.getsourcefile(StringAccessor))
-          for number, line in enumerate(prepare_docstring(StringAccessor.__doc__)[:24], 1):
-              print(f"{number:03d}: {line!r}")
-          PY
-
       - name: Build only DataArray.str accessor docs
         run: |
           mkdir -p /tmp/xarray-accessor-doc
@@ -59,6 +47,15 @@ jobs:
               "sphinx.ext.autosummary",
               "sphinx_autosummary_accessors",
           ]
+
+          def dump_docstring(app, what, name, obj, options, lines):
+              if "StringAccessor" in name or name.endswith(".str"):
+                  print(f"AUTODOC {what=} {name=}")
+                  for number, line in enumerate(lines, 1):
+                      print(f"AUTODOC {number:03d}: {line!r}")
+
+          def setup(app):
+              app.connect("autodoc-process-docstring", dump_docstring)
           PY
           cat > /tmp/xarray-accessor-doc/index.rst <<'RST'
           String accessor
