@@ -194,8 +194,6 @@ String manipulation
    :toctree: ../generated/
    :template: autosummary/accessor.rst
 
-   DataArray.str
-
 .. autosummary::
    :toctree: ../generated/
    :template: autosummary/accessor_method.rst
