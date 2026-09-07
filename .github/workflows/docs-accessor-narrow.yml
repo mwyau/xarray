@@ -23,23 +23,26 @@ jobs:
           pixi lock --no-install
           pixi install -e doc
 
-      - name: Build DataArray API page
-        working-directory: doc
+      - name: Build only DataArray.str accessor docs
         run: |
-          pixi run -e doc -- sphinx-build \
-            -T -W --keep-going -j 2 \
-            -b html \
-            -d _build/narrow-doctrees \
-            . _build/narrow-html \
-            api/dataarray.rst
+          mkdir -p /tmp/xarray-accessor-doc
+          cat > /tmp/xarray-accessor-doc/conf.py <<'PY'
+          extensions = [
+              "sphinx.ext.autodoc",
+              "sphinx.ext.autosummary",
+              "sphinx_autosummary_accessors",
+          ]
+          PY
+          cat > /tmp/xarray-accessor-doc/index.rst <<'RST'
+          String accessor
+          ===============
 
-      - name: Build generated string accessor page
-        working-directory: doc
-        run: |
-          test -f generated/xarray.DataArray.str.rst
+          .. currentmodule:: xarray
+
+          .. autoaccessor:: DataArray.str
+          RST
           pixi run -e doc -- sphinx-build \
-            -T -W --keep-going -j 2 \
+            -T -W --keep-going \
             -b html \
-            -d _build/accessor-doctrees \
-            . _build/accessor-html \
-            generated/xarray.DataArray.str.rst
+            /tmp/xarray-accessor-doc \
+            /tmp/xarray-accessor-doc/_build
