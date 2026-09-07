@@ -23,7 +23,7 @@ jobs:
         run: |
           pixi lock --no-install
           pixi install -e doc
-          pixi install -e typing
+          pixi install -e test-py311-with-typing
 
       - name: Apply candidate fix
         run: |
@@ -76,4 +76,4 @@ jobs:
             /tmp/xarray-accessor-doc/_build
 
       - name: Type-check DataArray
-        run: pixi run -e typing -- mypy xarray/core/dataarray.py
+        run: pixi run -e test-py311-with-typing mypy xarray/core/dataarray.py
