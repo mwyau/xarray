@@ -1,0 +1,45 @@
+name: Narrow string accessor docs
+
+on:
+  push:
+    branches:
+      - investigate/dataarray-str-docs
+
+permissions:
+  contents: read
+
+jobs:
+  docs-accessor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: prefix-dev/setup-pixi@f00437f565399d418b0acc85936d12c1fb668347 # v0.10.1
+
+      - name: Create docs environment
+        run: |
+          pixi lock --no-install
+          pixi install -e doc
+
+      - name: Build DataArray API page
+        working-directory: doc
+        run: |
+          pixi run -e doc -- sphinx-build \
+            -T -W --keep-going -j 2 \
+            -b html \
+            -d _build/narrow-doctrees \
+            . _build/narrow-html \
+            api/dataarray.rst
+
+      - name: Build generated string accessor page
+        working-directory: doc
+        run: |
+          test -f generated/xarray.DataArray.str.rst
+          pixi run -e doc -- sphinx-build \
+            -T -W --keep-going -j 2 \
+            -b html \
+            -d _build/accessor-doctrees \
+            . _build/accessor-html \
+            generated/xarray.DataArray.str.rst
