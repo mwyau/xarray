@@ -40,10 +40,18 @@ jobs:
           print("origin:", origin)
           PY
 
+      - name: Install type stubs
+        run: |
+          pixi run -e test-py314-with-typing -- python -m mypy --install-types --non-interactive xarray/ || true
+
       - name: Verify stubtest baseline
         run: |
           pixi run -e test-py314-with-typing -- python -m mypy.stubtest \
-            xarray.core.dataarray xarray.core.dataset xarray.core.variable
+            xarray.core.dataarray \
+            xarray.core.dataset \
+            xarray.core.variable \
+            --mypy-config-file pyproject.toml \
+            --allowlist _stubtest/allowlist.txt
 
       - name: Build only DataArray.str docs with docs-only hook
         run: |
