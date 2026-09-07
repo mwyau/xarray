@@ -1,0 +1,79 @@
+name: Test DataArray.str runtime accessor
+
+on:
+  push:
+    branches:
+      - investigate/dataarray-str-runtime
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: prefix-dev/setup-pixi@f00437f565399d418b0acc85936d12c1fb668347
+
+      - name: Create docs and typing environments
+        run: |
+          pixi lock --no-install
+          pixi install -e doc
+          pixi install -e typing
+
+      - name: Apply candidate fix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("xarray/core/dataarray.py")
+          text = path.read_text()
+          old = '    str = utils.UncachedAccessor(StringAccessor["DataArray"])'
+          new = '    str = utils.UncachedAccessor[StringAccessor["DataArray"]](StringAccessor)'
+          assert text.count(old) == 1
+          path.write_text(text.replace(old, new))
+          print(new.strip())
+          PY
+
+      - name: Check runtime accessor
+        run: |
+          pixi run -e doc -- python - <<'PY'
+          import xarray as xr
+          from xarray.core.accessor_str import StringAccessor
+
+          assert xr.DataArray.str is StringAccessor
+          assert isinstance(xr.DataArray(["a"]).str, StringAccessor)
+          print("DataArray.str class access:", xr.DataArray.str)
+          print("DataArray.str instance access: OK")
+          PY
+
+      - name: Build only DataArray.str docs
+        run: |
+          mkdir -p /tmp/xarray-accessor-doc
+          cat > /tmp/xarray-accessor-doc/conf.py <<'PY'
+          extensions = [
+              "sphinx.ext.autodoc",
+              "sphinx.ext.autosummary",
+              "sphinx_autosummary_accessors",
+          ]
+          PY
+          cat > /tmp/xarray-accessor-doc/index.rst <<'RST'
+          String accessor
+          ===============
+
+          .. currentmodule:: xarray
+
+          .. autoaccessor:: DataArray.str
+          RST
+          pixi run -e doc -- sphinx-build \
+            -T -W --keep-going \
+            -b html \
+            /tmp/xarray-accessor-doc \
+            /tmp/xarray-accessor-doc/_build
+
+      - name: Type-check DataArray
+        run: pixi run -e typing -- mypy xarray/core/dataarray.py
